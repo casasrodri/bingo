@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Bingo Musical</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --glass: rgba(255, 255, 255, 0.06);
+            --accent1: #ff7ab6;
+            --accent2: #7afcff;
+            --accent3: #ffd36b;
+            --accent4: #8dff7a;
+            --player-h: 45px;
+            --controls-h: 45px;
+            font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto;
+        }
+
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            background: linear-gradient(180deg, var(--bg), #071028 80%);
+            color: #fff;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .app {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #playerDisplay {
+            height: var(--player-h);
+            line-height: var(--player-h);
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 800;
+            background: #007bff;
+            color: #fff;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        #startBtn {
+            font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto;
+            width: 100%;
+            height: 40px;
+            text-align: center;
+            font-size: 1.10rem;
+            font-weight: 400;
+            background: #007bff;
+            color: #fff;
+            margin: 0;
+            border-radius: 8px;
+        }
+
+        .board {
+            height: calc(110vh - var(--player-h) - var(--controls-h));
+            width: 100vw;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 6px;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .cell {
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-weight: 700;
+            font-size: clamp(1.1rem, 2.6vw, 1.1rem);
+            padding: 8px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform .12s ease, box-shadow .12s ease;
+            box-shadow: 0 6px 18px rgba(2, 6, 23, 0.45), inset 0 -6px 18px rgba(255, 255, 255, 0.02);
+        }
+
+        .cell:active {
+            transform: translateY(2px) scale(.995);
+        }
+
+        .marked {
+            opacity: .45;
+            text-decoration: line-through;
+            filter: grayscale(.2);
+        }
+
+        .song-title {
+            font-weight: 700;
+        }
+
+        .song-artist {
+            font-size: 0.8em;
+            font-style: italic;
+            opacity: 0.9;
+        }
+
+        .c1 {
+            background: linear-gradient(135deg, var(--accent1), #ffb3e1);
+        }
+
+        .c2 {
+            background: linear-gradient(135deg, var(--accent2), #9ff7ff);
+            color: #082127;
+        }
+
+        .c3 {
+            background: linear-gradient(135deg, var(--accent3), #ffe6a8);
+            color: #2a1600;
+        }
+
+        .c4 {
+            background: linear-gradient(135deg, var(--accent4), #caffb3);
+            color: #06380a;
+        }
+
+        #controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            height: var(--controls-h);
+            background: rgba(255, 255, 255, 0.04);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+        }
+
+        #controls button {
+            flex: 1;
+            border: none;
+            border-radius: 0;
+            background: rgba(0, 123, 255, 0.95);
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.08s;
+        }
+
+        #controls button:active {
+            transform: scale(.97);
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(2, 6, 23, 0.65), rgba(2, 6, 23, 0.85));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+
+        .card {
+            background: #08142a;
+            padding: 18px;
+            border-radius: 14px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, .6);
+        }
+
+        .input {
+            width: 100%;
+            padding: 10px;
+
+            border-radius: 10px;
+            border: 0;
+            background: rgba(255, 255, 255, 0.04);
+            color: #fff;
+            margin-bottom: 10px;
+            padding-right: 0px;
+        }
+
+        .confetti {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-120vh) rotate(0)
+            }
+
+            100% {
+                transform: translateY(120vh) rotate(720deg)
+            }
+        }
+
+        .confetti span {
+            position: absolute;
+            width: 10px;
+            height: 16px;
+            display: block;
+            opacity: .95;
+            border-radius: 2px;
+            animation: fall 2.4s linear infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <div id="playerDisplay">🎉 Boda Rodri & Pauli</div>
+        <div class="board" id="board"></div>
+        <!-- <div id="controls">
+            <button id="regenerate">🆕 Nuevo</button>
+            <button id="shuffle">🔀 Barajar</button>
+            <button id="help">🆘 Ayuda</button>
+        </div> -->
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="card">
+            <h2>¡Listo para jugar!</h2>
+            <p>Decime tu nombre y te doy tu cartón.</p>
+            <input id="playerName" class="input" placeholder="Tu nombre..." />
+            <div style="display:flex;gap:8px">
+                <button id="startBtn">Comenzar</button>
+                <!-- <button id="skipBtn">Sin nombre</button> -->
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modalGanador" style="display:none">
+        <div class="card">
+            <h2>¡Felicitaciones!</h2>
+            <p>Ganaste el juego.</p>
+            <p>Acercate a reclamar tu premio!</p>
+        </div>
+    </div>
+
+    <div class="confetti" id="confetti"></div>
+
+    <script>
+        const SONGS = [
+            { title: 'Despacito', artist: 'Luis Fonsi ft. Daddy Yankee' },
+            { title: 'Shape of You', artist: 'Ed Sheeran' },
+            { title: 'Blinding Lights', artist: 'The Weeknd' },
+            { title: 'Bad Guy', artist: 'Billie Eilish' },
+            { title: 'Bohemian Rhapsody', artist: 'Queen' },
+            { title: 'Sweet Child O\' Mine', artist: 'Guns N\' Roses' },
+            { title: 'Imagine', artist: 'John Lennon' },
+            { title: 'La Camisa Negra', artist: 'Juanes' },
+            { title: 'Tusa', artist: 'Karol G & Nicki Minaj' },
+            { title: 'Havana', artist: 'Camila Cabello' },
+            { title: 'Someone Like You', artist: 'Adele' },
+            { title: 'Vivir Mi Vida', artist: 'Marc Anthony' },
+            { title: 'Africa', artist: 'Toto' },
+            { title: 'Hotel California', artist: 'Eagles' },
+            { title: 'Rolling in the Deep', artist: 'Adele' },
+            { title: 'Billie Jean', artist: 'Michael Jackson' },
+            { title: 'Dancing Queen', artist: 'ABBA' },
+            { title: 'Smells Like Teen Spirit', artist: 'Nirvana' },
+            { title: 'Girls Like You', artist: 'Maroon 5' },
+            { title: 'Take on Me', artist: 'A-ha' }
+        ];
+
+        const boardEl = document.getElementById('board');
+        const modal = document.getElementById('modal');
+        const modalGanador = document.getElementById('modalGanador');
+        const nameInput = document.getElementById('playerName');
+        const startBtn = document.getElementById('startBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        // const regen = document.getElementById('regenerate');
+        // const shuffle = document.getElementById('shuffle');
+        // const help = document.getElementById('help');
+        const confetti = document.getElementById('confetti');
+        let cells = [];
+
+        function pickN(arr, n) {
+            let c = [...arr], o = [];
+            for (let i = 0; i < n && c.length; i++) {
+                let r = Math.floor(Math.random() * c.length);
+                o.push(c.splice(r, 1)[0]);
+            }
+            return o;
+        }
+
+        function buildBoard(songs) {
+            // console.log(songs);
+            cells = songs.map(t => ({ ...t, marked: false }));
+            render();
+        }
+
+        function render() {
+            boardEl.innerHTML = '';
+            const colors = ['c1', 'c2', 'c3', 'c4'];
+            for (let i = 0; i < 9; i++) {
+                const c = cells[i];
+                const d = document.createElement('div');
+                d.className = 'cell ' + colors[i % 4];
+                d.innerHTML = `<div class="song-title">${c?.title || ''}</div>
+                               <div class="song-artist">${c?.artist || ''}</div>`;
+                if (c.marked) d.classList.add('marked');
+                d.dataset.i = i;
+                d.onclick = toggle;
+                boardEl.appendChild(d);
+            }
+        }
+
+        function toggle() {
+            let i = +this.dataset.i;
+            cells[i].marked = !cells[i].marked;
+            render();
+            check();
+        }
+
+        function check() {
+            // const lines = [
+            //     [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            //     [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            //     [0, 4, 8], [2, 4, 6]
+            // ];
+            // if (lines.some(l => l.every(i => cells[i].marked))) celebrate();
+            // if (lines.every(l => l.every(i => cells[i].marked))) celebrate();
+
+            // console.log(lines.filter(l => l.every(i => cells[i].marked)));
+
+            const allMarked = cells.every(c => c.marked);
+            if (allMarked) celebrate();
+        }
+
+        function celebrate() {
+            // playTone();
+            spawnConfetti(100);
+            // alert('Línea 🟢');
+            modalGanador.style.display = 'block';
+        }
+
+        function playTone() {
+            try {
+                const ctx = new (AudioContext || webkitAudioContext)();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = 'sine';
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.start();
+                o.frequency.value = 880;
+                g.gain.value = .1;
+                setTimeout(() => { o.stop(); ctx.close(); }, 500);
+            } catch (e) { }
+        }
+
+        function spawnConfetti(n) {
+            confetti.innerHTML = '';
+            const colors = ['#ff7ab6', '#7afcff', '#ffd36b', '#8dff7a', '#9b7bff', '#ff9b7b'];
+            for (let i = 0; i < n; i++) {
+                let s = document.createElement('span');
+                s.style.left = Math.random() * 100 + '%';
+                s.style.top = (-10 - Math.random() * 20) + '%';
+                s.style.background = colors[Math.floor(Math.random() * colors.length)];
+                s.style.animationDelay = (Math.random() * 0.5) + 's';
+                s.style.animationDuration = (1.9 + Math.random()) + 's';
+                confetti.appendChild(s);
+                setTimeout(() => s.remove(), 8000);
+            }
+        }
+
+        function setPlayerName(name) {
+            document.getElementById('playerDisplay').textContent = name || 'Nombre del jugador';
+        }
+
+        startBtn.onclick = () => {
+            modal.style.display = 'none';
+            setPlayerName(nameInput.value);
+            buildBoard(pickN(SONGS, 9));
+        };
+
+        // skipBtn.onclick = () => {
+        //     modal.style.display = 'none';
+        //     setPlayerName('');
+        //     buildBoard(pickN(SONGS, 9));
+        // };
+
+        // regen.onclick = () => buildBoard(pickN(SONGS, 9));
+
+        // shuffle.onclick = () => {
+        //     for (let i = cells.length - 1; i > 0; i--) {
+        //         const j = Math.floor(Math.random() * (i + 1));
+        //         [cells[i], cells[j]] = [cells[j], cells[i]];
+        //     }
+        //     render();
+        // };
+
+        // help.onclick = () => alert('Marca las canciones cuando suenen. Completá una fila, columna o diagonal para ganar.');
+
+        window.onload = () => {
+            buildBoard(pickN(SONGS, 9));
+            setTimeout(() => nameInput.focus(), 300);
+        };
+    </script>
+</body>
+
+</html>
