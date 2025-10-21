@@ -335,8 +335,28 @@
         const cancionesGanadorEl = document.getElementById('cancionesGanador');
         let cells = [];
 
+        function luigi(nombreJugador) {
+            const LUIGI = [
+                'luigi',
+                'luis',
+                'luis tobanelli',
+                'tobanelli',
+                'tobanelli luigi',
+                'tobanelli luis',
+                'toba',
+                'luigi tobanelli',
+            ]
+
+            console.log({ luis: LUIGI.includes(nombreJugador.toLowerCase()) })
+            if (LUIGI.includes(nombreJugador.toLowerCase())) {
+                alert('¡Oh por Dios! ¿Qué es un QR?');
+            }
+        }
+
         // Llamada a API para obtener canciones
         async function crearPartida(nombreJugador) {
+            luigi(nombreJugador);
+
             try {
                 const response = await fetch(`https://script.google.com/macros/s/AKfycbzhiuRvIDNROEnvHCf_B_ygatiHDisHeK8RanBV1uMmCrrCb4Z5HxQ740-wUAZ0kwcm/exec?endpoint=register&nombre=${nombreJugador}`);
                 const data = await response.json();
