@@ -35,6 +35,14 @@
             flex-direction: column;
         }
 
+        .hidden {
+            display: none !important;
+        }
+
+        #block {
+            display: block;
+        }
+
         #playerDisplay {
             height: var(--player-h);
             line-height: var(--player-h);
@@ -69,6 +77,20 @@
             gap: 6px;
             padding: 8px;
             box-sizing: border-box;
+        }
+
+        /* Centrar contenido cuando mostramos el mensaje del ganador */
+        .centered {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: calc(100vh - var(--player-h));
+            width: 100vw;
+            padding: 0 18px;
+            box-sizing: border-box;
+            font-size: 1.4rem;
+            text-align: center !important;
         }
 
         .cell {
@@ -186,6 +208,23 @@
             padding-right: 0px;
         }
 
+        #cancionesGanador {
+            margin-top: 1rem;
+            align-self: flex-start;
+            padding-left: 2rem;
+        }
+
+        #cancionesGanador ol {
+            text-align: left;
+            margin: 0;
+            padding-left: 2rem;
+        }
+
+        #cancionesGanador li {
+            margin: 0.5rem 0;
+            font-size: 1.1rem;
+        }
+
         .confetti {
             position: fixed;
             inset: 0;
@@ -224,6 +263,11 @@
             <button id="shuffle">🔀 Barajar</button>
             <button id="help">🆘 Ayuda</button>
         </div> -->
+        <div id="seccGanador" class="hidden">
+            🏆 GANADOR
+            <h4 id="nombreGanador"></h4>
+            <ol id="cancionesGanador"></ol>
+        </div>
     </div>
 
     <div class="modal" id="modal">
@@ -249,6 +293,9 @@
     <div class="confetti" id="confetti"></div>
 
     <script>
+        const paginaGanador = new URLSearchParams(window.location.search).get('ganador') !== null;
+        console.log({ paginaGanador })
+
         const SONGS = [
             // TODO: Reemplazar con canciones reales
             { title: 'Despacito', artist: 'Luis Fonsi ft. Daddy Yankee' },
@@ -283,6 +330,9 @@
         // const shuffle = document.getElementById('shuffle');
         // const help = document.getElementById('help');
         const confetti = document.getElementById('confetti');
+        const seccGanador = document.getElementById('seccGanador');
+        const nombreGanadorEl = document.getElementById('nombreGanador');
+        const cancionesGanadorEl = document.getElementById('cancionesGanador');
         let cells = [];
 
         // Llamada a API para obtener canciones
@@ -309,10 +359,15 @@
 
         async function buildBoard() {
             // Cargando centrado horizontal y verticalmente
-
+            boardEl.classList.toggle('board');
+            boardEl.classList.toggle('centered');
             boardEl.innerHTML = '🕗 Cargando...';
+
             const partida = await crearPartida(nameInput.value);
             const songs = partida.canciones || pickN(SONGS, 9);
+
+            boardEl.classList.toggle('centered');
+            boardEl.classList.toggle('board');
             cells = songs.map(t => ({ ...t, marked: false }));
             render();
         }
@@ -382,21 +437,40 @@
         //     buildBoard(pickN(SONGS, 9));
         // };
 
-        // regen.onclick = () => buildBoard(pickN(SONGS, 9));
 
-        // shuffle.onclick = () => {
-        //     for (let i = cells.length - 1; i > 0; i--) {
-        //         const j = Math.floor(Math.random() * (i + 1));
-        //         [cells[i], cells[j]] = [cells[j], cells[i]];
-        //     }
-        //     render();
-        // };
 
-        // help.onclick = () => alert('Marca las canciones cuando suenen. Completá una fila, columna o diagonal para ganar.');
+
 
         window.onload = () => {
             // buildBoard(pickN(SONGS, 9));
-            setTimeout(() => nameInput.focus(), 300);
+            setTimeout(async () => {
+                if (paginaGanador) {
+                    modal.style.display = 'none';
+                    boardEl.classList.toggle('board');
+
+                    seccGanador.classList.toggle('centered');
+                    seccGanador.classList.toggle('hidden');
+
+                    try {
+                        const res = await fetch('https://script.google.com/macros/s/AKfycbzhiuRvIDNROEnvHCf_B_ygatiHDisHeK8RanBV1uMmCrrCb4Z5HxQ740-wUAZ0kwcm/exec?endpoint=winner');
+                        const data = await res.json();
+
+                        nombreGanadorEl.textContent = data.ganador.usuario || 'Desconocido';
+                        cancionesGanadorEl.innerHTML = '';
+                        data.ganador.canciones.forEach(cancion => {
+                            const li = document.createElement('li');
+                            li.textContent = `${cancion.title} - ${cancion.artist}`;
+                            cancionesGanadorEl.appendChild(li);
+                        });
+
+                    } catch (error) {
+                        console.error('Error al mostrar el ganador:', error);
+                    }
+                } else {
+                    modal.style.display = 'flex';
+                    nameInput.focus();
+                }
+            }, 300);
         };
     </script>
 </body>
